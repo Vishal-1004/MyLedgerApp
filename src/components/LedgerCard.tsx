@@ -8,10 +8,17 @@ interface Props {
 }
 
 export const LedgerCard = ({ record, onPress }: Props) => {
-  const { title, description, amount, frequency, skipNext, totalAccumulated } =
-    record;
+  const {
+    title,
+    description,
+    amount,
+    frequency,
+    skipNext,
+    totalAccumulated,
+    isRecurring,
+  } = record;
 
-  // Format the accumulated amount to Indian numbering system
+  // Format the accumulated amount to Indian numbering system (en-IN)
   const formattedAccumulated = totalAccumulated.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -19,22 +26,31 @@ export const LedgerCard = ({ record, onPress }: Props) => {
 
   return (
     <TouchableOpacity
-      style={[styles.card, skipNext && styles.skippedCard]}
+      style={[styles.card, isRecurring && skipNext && styles.skippedCard]}
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <View style={[styles.accentTab, skipNext && styles.skippedTab]} />
+      {/* Accent tab turns grey if the recurring record is paused */}
+      <View
+        style={[styles.accentTab, isRecurring && skipNext && styles.skippedTab]}
+      />
+
       <View style={styles.content}>
         <View style={styles.leftCol}>
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            {skipNext && <Text style={styles.skipBadge}>PAUSED</Text>}
+            {/* Show PAUSED badge only for recurring items that are skipped */}
+            {isRecurring && skipNext && (
+              <Text style={styles.skipBadge}>PAUSED</Text>
+            )}
           </View>
+
           <Text style={styles.description} numberOfLines={1}>
             {description}
           </Text>
+
           {totalAccumulated > 0 && (
             <Text style={styles.accumulatedText} numberOfLines={1}>
               Accumulated: ₹ {formattedAccumulated}
@@ -51,7 +67,13 @@ export const LedgerCard = ({ record, onPress }: Props) => {
           >
             {amount}
           </Text>
-          <Text style={styles.frequency}>{frequency.toUpperCase()}</Text>
+
+          {/* If the record is not recurring, we show "ONE-TIME" 
+              instead of "MONTHLY", "DAILY", etc. 
+          */}
+          <Text style={styles.frequency}>
+            {isRecurring ? frequency.toUpperCase() : "ONE-TIME"}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -74,8 +96,13 @@ const styles = StyleSheet.create({
   skippedCard: {
     opacity: 0.6,
   },
-  accentTab: { width: 4, backgroundColor: Colors.primaryContainer },
-  skippedTab: { backgroundColor: Colors.outline },
+  accentTab: {
+    width: 4,
+    backgroundColor: Colors.primaryContainer,
+  },
+  skippedTab: {
+    backgroundColor: Colors.outline,
+  },
   content: {
     flex: 1,
     padding: 20,
@@ -94,7 +121,11 @@ const styles = StyleSheet.create({
     minWidth: 80,
     flexShrink: 0,
   },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: "700",
@@ -112,7 +143,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: "hidden",
   },
-  description: { fontSize: 13, color: Colors.onSurfaceVariant, marginTop: 4 },
+  description: {
+    fontSize: 13,
+    color: Colors.onSurfaceVariant,
+    marginTop: 4,
+  },
   accumulatedText: {
     fontSize: 11,
     fontWeight: "600",

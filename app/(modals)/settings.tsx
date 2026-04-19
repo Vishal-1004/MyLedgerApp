@@ -10,10 +10,10 @@ import {
 } from "react-native";
 import { SettingItem } from "../../src/components/SettingItem";
 import { Colors } from "../../src/constants/Colors";
-import { useLedgerStore } from "../../src/store/useLedgerStore"; // Import your store
+import { useLedgerStore } from "../../src/store/useLedgerStore";
 
 export default function SettingsScreen() {
-  const clearAll = useLedgerStore((state) => state.clearAll); // Get the clear action
+  const clearAll = useLedgerStore((state) => state.clearAll);
 
   const handleClearData = () => {
     Alert.alert(
@@ -39,21 +39,18 @@ export default function SettingsScreen() {
         options={{ title: "Settings", headerTitleAlign: "center" }}
       />
 
-      {/* Profile Section */}
+      {/* App Branding Section - Replaces Profile */}
       <View style={styles.profileSection}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={50} color={Colors.outline} />
+            <Ionicons name="flash" size={50} color={Colors.primary} />
           </View>
-          <TouchableOpacity style={styles.editBadge}>
-            <Ionicons name="pencil" size={14} color="white" />
-          </TouchableOpacity>
         </View>
-        <Text style={styles.userName}>Alex Sterling</Text>
-        <Text style={styles.userEmail}>alex.sterling@example.com</Text>
+        <Text style={styles.userName}>Jolt Ledger</Text>
+        <Text style={styles.userEmail}>v1.0.0 (Stable)</Text>
       </View>
 
-      {/* Preferences (Theme Toggle) */}
+      {/* Preferences (Theme Toggle) - RESTORED */}
       <Text style={styles.sectionHeader}>PREFERENCES</Text>
       <View style={styles.themeToggle}>
         <TouchableOpacity style={[styles.toggleBtn, styles.activeToggle]}>
@@ -74,25 +71,19 @@ export default function SettingsScreen() {
       <Text style={styles.sectionHeader}>ACCOUNT</Text>
       <View style={styles.group}>
         <SettingItem
-          icon="lock-closed-outline"
-          label="Change Password"
-          onPress={() => {}}
-        />
-        <SettingItem
           icon="shield-checkmark-outline"
           label="Security Settings"
           onPress={() => {}}
         />
-        {/* NEW: Clear Data Button */}
         <SettingItem
           icon="trash-outline"
           label="Clear All Data"
           onPress={handleClearData}
-          color={Colors.error} // Pass the error color for the icon/text
+          color={Colors.error}
         />
       </View>
 
-      {/* Information Section */}
+      {/* Information Section - RESTORED ORIGINAL TEXT */}
       <Text style={styles.sectionHeader}>INFORMATION</Text>
       <View style={styles.group}>
         <SettingItem
@@ -115,20 +106,13 @@ export default function SettingsScreen() {
         />
       </View>
 
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutBtn}>
-        <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
-
       <Text style={styles.footerText}>
-        MADE WITH CARE BY CONTINUUM CLEAN • © 2024
+        MADE WITH CARE BY VISHAL • © {new Date().getFullYear()}
       </Text>
     </ScrollView>
   );
 }
 
-// Styles remain unchanged
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 24, paddingBottom: 60 },
@@ -143,14 +127,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 4,
     borderColor: Colors.surface,
-  },
-  editBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: Colors.primary,
-    padding: 8,
-    borderRadius: 20,
   },
   userName: { fontSize: 22, fontWeight: "800", color: Colors.onSurface },
   userEmail: {
@@ -199,19 +175,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: Colors.surface,
   },
-  logoutBtn: {
-    marginTop: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: `${Colors.error}20`,
-    backgroundColor: `${Colors.error}10`,
-  },
-  logoutText: { color: Colors.error, fontWeight: "800", fontSize: 16 },
   footerText: {
     textAlign: "center",
     fontSize: 10,

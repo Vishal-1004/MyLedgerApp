@@ -16,14 +16,12 @@ export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  // 1. Fetch the specific record and actions from the store
   const record = useLedgerStore((state) =>
     state.records.find((r) => r.id === id),
   );
   const deleteRecord = useLedgerStore((state) => state.deleteRecord);
   const updateRecord = useLedgerStore((state) => state.updateRecord);
 
-  // 2. Safety check: if record isn't found
   if (!record) {
     return (
       <View style={styles.container}>
@@ -34,7 +32,6 @@ export default function RecordDetailScreen() {
     );
   }
 
-  // 3. Handlers
   const handleDelete = () => {
     Alert.alert(
       "Delete Record",
@@ -57,13 +54,19 @@ export default function RecordDetailScreen() {
     updateRecord(record.id, { skipNext: !record.skipNext });
   };
 
-  // --- NEW: Navigation to Edit Modal ---
   const handleEdit = () => {
     router.push({
       pathname: "/(modals)/edit-record",
-      params: { id: record.id }, // Pass the ID so the edit modal can load the data
+      params: { id: record.id },
     } as any);
   };
+
+  // Format accumulated total with Indian Locale
+  const formattedTotal = record.totalAccumulated.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const [whole, decimal] = formattedTotal.split(".");
 
   return (
     <View style={styles.container}>
@@ -72,7 +75,6 @@ export default function RecordDetailScreen() {
           headerTitle: "Record Detail",
           headerRight: () => (
             <View style={styles.headerActions}>
-              {/* UPDATED: Pencil icon now triggers handleEdit */}
               <TouchableOpacity style={styles.iconBtn} onPress={handleEdit}>
                 <Ionicons name="pencil" size={20} color={Colors.onSurface} />
               </TouchableOpacity>
@@ -88,35 +90,41 @@ export default function RecordDetailScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section - DYNAMIC */}
         <View style={styles.hero}>
-          <Text style={styles.title}>{record.title}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {record.title}
+          </Text>
           <Text style={styles.subtitle}>{record.description}</Text>
 
-          {/* Expected Savings & Next Occurrence Row */}
-          <View style={styles.expectationRow}>
-            <View style={styles.leftInfo}>
-              <View style={styles.expectationLabelGroup}>
-                <Ionicons name="repeat" size={14} color={Colors.primary} />
-                <Text style={styles.expectationLabel}>
-                  EXPECTED {record.frequency.toUpperCase()}
+          {/* Conditional Rendering: Only show frequency info if RECURRING */}
+          {record.isRecurring ? (
+            <View style={styles.expectationRow}>
+              <View style={styles.leftInfo}>
+                <View style={styles.expectationLabelGroup}>
+                  <Ionicons name="repeat" size={14} color={Colors.primary} />
+                  <Text style={styles.expectationLabel}>
+                    EXPECTED {record.frequency.toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={styles.nextOccurrenceText}>
+                  Next: {record.nextRun}
                 </Text>
               </View>
-              <Text style={styles.nextOccurrenceText}>
-                Next: {record.nextRun}
-              </Text>
+              <Text style={styles.expectationValue}>{record.amount}</Text>
             </View>
-            <Text style={styles.expectationValue}>{record.amount}</Text>
-          </View>
+          ) : (
+            <View style={styles.oneTimeBadge}>
+              <Ionicons name="flash-outline" size={14} color={Colors.outline} />
+              <Text style={styles.oneTimeText}>ONE-TIME RECORD</Text>
+            </View>
+          )}
 
           <View style={styles.totalCard}>
             <View style={styles.totalContent}>
               <Text style={styles.totalLabel}>TOTAL ACCUMULATED</Text>
               <Text style={styles.totalAmount}>
-                ₹{Math.floor(record.totalAccumulated)}
-                <Text style={styles.decimal}>
-                  .{(record.totalAccumulated % 1).toFixed(2).split(".")[1]}
-                </Text>
+                ₹{whole}
+                <Text style={styles.decimal}>.{decimal}</Text>
               </Text>
             </View>
             <Ionicons
@@ -127,31 +135,34 @@ export default function RecordDetailScreen() {
           </View>
         </View>
 
-        {/* Primary Action - SKIP TOGGLE */}
-        <TouchableOpacity
-          style={[
-            styles.skipButton,
-            record.skipNext && { backgroundColor: Colors.primaryContainer },
-          ]}
-          activeOpacity={0.7}
-          onPress={toggleSkip}
-        >
-          <Ionicons
-            name={record.skipNext ? "play-circle-outline" : "calendar-outline"}
-            size={20}
-            color={record.skipNext ? Colors.primary : Colors.onSurface}
-          />
-          <Text
+        {/* Conditional Action: Only allow Skip/Resume if RECURRING */}
+        {record.isRecurring && (
+          <TouchableOpacity
             style={[
-              styles.skipText,
-              record.skipNext && { color: Colors.primary },
+              styles.skipButton,
+              record.skipNext && { backgroundColor: Colors.primaryContainer },
             ]}
+            activeOpacity={0.7}
+            onPress={toggleSkip}
           >
-            {record.skipNext ? "Resume occurrences" : "Skip next occurrence"}
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name={
+                record.skipNext ? "play-circle-outline" : "calendar-outline"
+              }
+              size={20}
+              color={record.skipNext ? Colors.primary : Colors.onSurface}
+            />
+            <Text
+              style={[
+                styles.skipText,
+                record.skipNext && { color: Colors.primary },
+              ]}
+            >
+              {record.skipNext ? "Resume occurrences" : "Skip next occurrence"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
-        {/* History List - DYNAMIC */}
         <View style={styles.historyHeader}>
           <Text style={styles.historyTitle}>History</Text>
           <View style={styles.line} />
@@ -190,15 +201,7 @@ export default function RecordDetailScreen() {
               </View>
             ))
           ) : (
-            <Text
-              style={{
-                textAlign: "center",
-                color: Colors.outline,
-                marginTop: 20,
-              }}
-            >
-              No history entries yet.
-            </Text>
+            <Text style={styles.emptyText}>No history entries yet.</Text>
           )}
         </View>
       </ScrollView>
@@ -224,7 +227,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: { fontSize: 14, color: Colors.onSurfaceVariant, lineHeight: 20 },
-
   expectationRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -235,9 +237,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginTop: 20,
   },
-  leftInfo: {
-    flex: 1,
-  },
+  leftInfo: { flex: 1 },
   expectationLabelGroup: {
     flexDirection: "row",
     alignItems: "center",
@@ -260,6 +260,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: Colors.onSurface,
+  },
+
+  // Styles for One-time records
+  oneTimeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.surfaceContainerLow,
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  oneTimeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: Colors.outline,
+    letterSpacing: 1,
   },
 
   totalCard: {
@@ -287,12 +306,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   totalAmount: {
-    fontSize: 40,
+    fontSize: 34,
     fontWeight: "800",
     color: Colors.primary,
     letterSpacing: -1,
   },
-  decimal: { fontSize: 20, opacity: 0.5 },
+  decimal: { fontSize: 18, opacity: 0.5 },
   skipButton: {
     backgroundColor: Colors.surfaceContainerLow,
     padding: 16,
@@ -345,4 +364,5 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 2,
   },
+  emptyText: { textAlign: "center", color: Colors.outline, marginTop: 20 },
 });

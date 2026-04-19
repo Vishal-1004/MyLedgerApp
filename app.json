@@ -52,6 +52,12 @@
         "projectId": "277ace41-1765-4dfa-9050-c9152d54b7bb"
       }
     },
-    "owner": "vishal104"
+    "owner": "vishal104",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/277ace41-1765-4dfa-9050-c9152d54b7bb"
+    }
   }
 }

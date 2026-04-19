@@ -2,7 +2,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react"; // Added useEffect
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -40,6 +41,9 @@ export default function NewRecordModal() {
   const [desc, setDesc] = useState("");
   const [freq, setFreq] = useState<Frequency>("Monthly");
 
+  // --- New State for Recurring Toggle ---
+  const [isRecurring, setIsRecurring] = useState(true);
+
   const [timeDate, setTimeDate] = useState(new Date());
   const [tempDate, setTempDate] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -49,17 +53,13 @@ export default function NewRecordModal() {
   const [targetDay, setTargetDay] = useState("Monday");
   const [targetDate, setTargetDate] = useState("15");
 
-  // --- UI Cleanup Effect ---
-  // This automatically hides the calendar if the user switches away from 'Yearly'
   useEffect(() => {
     if (freq !== "Yearly") {
       setShowCalendar(false);
     }
-    // Also clean up time picker when switching frequencies to keep UI clean
     setShowTimePicker(false);
   }, [freq]);
 
-  // --- Precision Occurrence Calculation ---
   const calculateNextOccurrence = () => {
     let next = new Date();
     next.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0);
@@ -119,6 +119,7 @@ export default function NewRecordModal() {
         nextRunRaw: occurrence.iso,
         totalAccumulated: 0,
         skipNext: false,
+        isRecurring: isRecurring, // Saved to Store
         history: [],
         createdAt: new Date().toISOString(),
       };
@@ -130,11 +131,7 @@ export default function NewRecordModal() {
       }
     } catch (error) {
       console.error("❌ Failed to save record:", error);
-      Alert.alert(
-        "Save Error",
-        "We couldn't save your record. Please check your storage space and try again.",
-        [{ text: "OK" }],
-      );
+      Alert.alert("Save Error", "We couldn't save your record.");
     }
   };
 
@@ -232,104 +229,124 @@ export default function NewRecordModal() {
           onChangeText={setDesc}
         />
 
-        <Text style={styles.sectionLabel}>FREQUENCY</Text>
-        <View style={styles.tabs}>
-          {(["Daily", "Weekly", "Monthly", "Yearly"] as Frequency[]).map(
-            (f) => (
-              <TouchableOpacity
-                key={f}
-                onPress={() => setFreq(f)}
-                style={[styles.tab, freq === f && styles.activeTab]}
-              >
-                <Text
-                  style={[styles.tabText, freq === f && styles.activeTabText]}
+        {/* --- Updated Frequency Header with Toggle --- */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabelInline}>FREQUENCY</Text>
+          <Switch
+            trackColor={{ false: "#767577", true: Colors.primaryContainer }}
+            thumbColor={isRecurring ? Colors.primary : "#f4f3f4"}
+            onValueChange={() =>
+              setIsRecurring((previousState) => !previousState)
+            }
+            value={isRecurring}
+          />
+        </View>
+
+        {/* --- Conditional Frequency Selection --- */}
+        {isRecurring && (
+          <>
+            <View style={styles.tabs}>
+              {(["Daily", "Weekly", "Monthly", "Yearly"] as Frequency[]).map(
+                (f) => (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setFreq(f)}
+                    style={[styles.tab, freq === f && styles.activeTab]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        freq === f && styles.activeTabText,
+                      ]}
+                    >
+                      {f}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+              )}
+            </View>
+
+            <View style={styles.contextBox}>
+              <Text style={styles.contextText}>
+                {calculateNextOccurrence().display}
+              </Text>
+              <View style={styles.grid}>
+                {(freq === "Weekly" || freq === "Monthly") && (
+                  <TouchableOpacity
+                    style={styles.gridItem}
+                    onPress={() => setShowListModal(true)}
+                  >
+                    <Text style={styles.gridLabel}>
+                      {freq === "Weekly" ? "DAY" : "DATE"}
+                    </Text>
+                    <Text style={styles.gridInput}>
+                      {freq === "Weekly" ? targetDay : targetDate}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {freq === "Yearly" && (
+                  <TouchableOpacity
+                    style={styles.gridItem}
+                    onPress={() => setShowCalendar(true)}
+                  >
+                    <Text style={styles.gridLabel}>DATE & MONTH</Text>
+                    <Text style={styles.gridInput}>
+                      {formatDateShort(tempDate)}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.gridItem}
+                  onPress={() => setShowTimePicker(true)}
                 >
-                  {f}
-                </Text>
-              </TouchableOpacity>
-            ),
-          )}
-        </View>
+                  <Text style={styles.gridLabel}>TIMING</Text>
+                  <Text style={styles.gridInput}>{formatTime(timeDate)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-        <View style={styles.contextBox}>
-          <Text style={styles.contextText}>
-            {calculateNextOccurrence().display}
-          </Text>
-          <View style={styles.grid}>
-            {(freq === "Weekly" || freq === "Monthly") && (
-              <TouchableOpacity
-                style={styles.gridItem}
-                onPress={() => setShowListModal(true)}
+            {showTimePicker && (
+              <View
+                style={Platform.OS === "ios" ? styles.iosPickerContainer : null}
               >
-                <Text style={styles.gridLabel}>
-                  {freq === "Weekly" ? "DAY" : "DATE"}
-                </Text>
-                <Text style={styles.gridInput}>
-                  {freq === "Weekly" ? targetDay : targetDate}
-                </Text>
-              </TouchableOpacity>
+                {Platform.OS === "ios" && (
+                  <TouchableOpacity
+                    onPress={() => setShowTimePicker(false)}
+                    style={styles.iosDoneBar}
+                  >
+                    <Text style={styles.doneBtnText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+                <DateTimePicker
+                  value={timeDate}
+                  mode="time"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onTimeChange}
+                />
+              </View>
             )}
-            {freq === "Yearly" && (
-              <TouchableOpacity
-                style={styles.gridItem}
-                onPress={() => setShowCalendar(true)}
-              >
-                <Text style={styles.gridLabel}>DATE & MONTH</Text>
-                <Text style={styles.gridInput}>
-                  {formatDateShort(tempDate)}
-                </Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={styles.gridItem}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Text style={styles.gridLabel}>TIMING</Text>
-              <Text style={styles.gridInput}>{formatTime(timeDate)}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {showTimePicker && (
-          <View
-            style={Platform.OS === "ios" ? styles.iosPickerContainer : null}
-          >
-            {Platform.OS === "ios" && (
-              <TouchableOpacity
-                onPress={() => setShowTimePicker(false)}
-                style={styles.iosDoneBar}
+            {showCalendar && (
+              <View
+                style={Platform.OS === "ios" ? styles.iosPickerContainer : null}
               >
-                <Text style={styles.doneBtnText}>Done</Text>
-              </TouchableOpacity>
+                {Platform.OS === "ios" && (
+                  <TouchableOpacity
+                    onPress={() => setShowCalendar(false)}
+                    style={styles.iosDoneBar}
+                  >
+                    <Text style={styles.doneBtnText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "inline" : "calendar"}
+                  onChange={onCalendarChange}
+                />
+              </View>
             )}
-            <DateTimePicker
-              value={timeDate}
-              mode="time"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={onTimeChange}
-            />
-          </View>
-        )}
-
-        {showCalendar && (
-          <View
-            style={Platform.OS === "ios" ? styles.iosPickerContainer : null}
-          >
-            {Platform.OS === "ios" && (
-              <TouchableOpacity
-                onPress={() => setShowCalendar(false)}
-                style={styles.iosDoneBar}
-              >
-                <Text style={styles.doneBtnText}>Done</Text>
-              </TouchableOpacity>
-            )}
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "inline" : "calendar"}
-              onChange={onCalendarChange}
-            />
-          </View>
+          </>
         )}
       </View>
 
@@ -375,6 +392,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: Colors.onSurfaceVariant,
+    marginTop: 32,
+    marginBottom: 12,
+  },
+  sectionLabelInline: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: Colors.onSurfaceVariant,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 32,
     marginBottom: 12,
   },

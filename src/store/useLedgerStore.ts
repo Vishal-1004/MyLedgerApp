@@ -18,10 +18,11 @@ export interface LedgerRecord {
   nextRun: string; // Display: "08:00 PM | 03 Apr 2027"
   nextRunRaw: string; // ISO: "2027-04-03T20:00:00.000Z"
 
-  // --- New Fields ---
-  totalAccumulated: number; // Numeric sum of all successful recurrences
-  skipNext: boolean; // Whether the user wants to skip the next scheduled run
-  history: HistoryEntry[]; // Array of previous successful entries
+  // --- Logic Fields ---
+  totalAccumulated: number;
+  skipNext: boolean;
+  isRecurring: boolean; // NEW: true for repeating tasks, false for one-time tasks
+  history: HistoryEntry[];
 
   createdAt: string;
 }
@@ -31,13 +32,8 @@ interface LedgerState {
   addRecord: (record: LedgerRecord) => void;
   deleteRecord: (id: string) => void;
   updateRecord: (id: string, updates: Partial<LedgerRecord>) => void;
-
-  // NEW: Added setRecords for the background reconciliation job
   setRecords: (records: LedgerRecord[]) => void;
-
-  // Action to record a successful occurrence
   recordOccurrence: (id: string) => void;
-
   clearAll: () => void;
 }
 
@@ -63,10 +59,8 @@ export const useLedgerStore = create<LedgerState>()(
           ),
         })),
 
-      // IMPLEMENTATION: Allows overwriting records with the catch-up data
       setRecords: (records) => set({ records }),
 
-      // Senior Feature: Logic to move "Next Run" to "History"
       recordOccurrence: (id) =>
         set((state) => ({
           records: state.records.map((r) => {
@@ -76,7 +70,6 @@ export const useLedgerStore = create<LedgerState>()(
                 amount: r.amount,
               };
 
-              // Extract numeric value from "INR 1200.00" string for math
               const numericAmount =
                 parseFloat(r.amount.replace(/[^0-9.]/g, "")) || 0;
 

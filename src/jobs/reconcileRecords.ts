@@ -41,8 +41,7 @@ const formatDisplayDate = (date: Date): string => {
 
 /**
  * reconcilesRecords
- * Senior Dev Note: This is a pure function for testability.
- * It takes the current state and returns the updated state.
+ * Pure function to align record state with current time.
  */
 export const reconcileRecords = (records: LedgerRecord[]): LedgerRecord[] => {
   const now = new Date();
@@ -51,6 +50,11 @@ export const reconcileRecords = (records: LedgerRecord[]): LedgerRecord[] => {
   );
 
   const updatedRecords = records.map((record) => {
+    // Check if record is recurring. If not, skip automated catch-up logic.
+    if (!record.isRecurring) {
+      return record;
+    }
+
     let nextRunTime = new Date(record.nextRunRaw);
 
     // Check if the record is due for processing
@@ -58,7 +62,9 @@ export const reconcileRecords = (records: LedgerRecord[]): LedgerRecord[] => {
       return record; // Still in the future, no action needed
     }
 
-    console.log(`[Reconciler] 📌 Processing due record: "${record.title}"`);
+    console.log(
+      `[Reconciler] 📌 Processing due recurring record: "${record.title}"`,
+    );
     let tempRecord = { ...record };
     let iterations = 0;
 
@@ -76,7 +82,7 @@ export const reconcileRecords = (records: LedgerRecord[]): LedgerRecord[] => {
           amount: tempRecord.amount,
         };
 
-        // Add to history
+        // Add to history (newest at the top)
         tempRecord.history = [newHistoryEntry, ...tempRecord.history];
 
         // Update totalAccumulated
