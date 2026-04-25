@@ -16,6 +16,7 @@ export const SettingItem = ({
   value,
   onPress,
   color = Colors.primary,
+  showForwardArrow=true,
 }: Props) => (
   <TouchableOpacity
     style={styles.container}
@@ -31,9 +32,9 @@ export const SettingItem = ({
     </View>
     <View style={styles.right}>
       {value ? <Text style={styles.valueText}>{value}</Text> : null}
-      {onPress && (
-        <Ionicons name="chevron-forward" size={18} color={Colors.outline} />
-      )}
+      {showForwardArrow && onPress && (
+    <Ionicons name="chevron-forward" size={18} color={Colors.outline} />
+  )}
     </View>
   </TouchableOpacity>
 );
